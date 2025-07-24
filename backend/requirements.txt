@@ -1,0 +1,16 @@
+fastapi
+uvicorn[standard]
+python-dotenv
+supabase
+neo4j
+llama-index
+llama-index-llms-gemini
+llama-index-embeddings-gemini
+llama-index-embeddings-openai
+llama-index-graph-stores-neo4j
+# llama-index-vector-stores-neo4j는 Python 3.13에서 호환 안됨
+# 대신 llama-index-vector-stores-neo4jvector 사용
+llama-index-vector-stores-neo4jvector
+pydantic
+pydantic-settings
+tabulate
