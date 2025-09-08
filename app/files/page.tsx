@@ -19,6 +19,7 @@ import { supabase } from '@/lib/supabase/client';
 import IngestButton from './ingest-button';
 
 async function getFiles() {
+  if (!supabase) return [];
   const { data: documents, error } = await supabase
     .from('documents')
     .select(
@@ -43,7 +44,7 @@ export default function FilesPage() {
   const [files, setFiles] = useState<any[]>([]);
   const [showGlobalGraph, setShowGlobalGraph] = useState(false);
   const [loading, setLoading] = useState(true);
-  
+
   // Fetch files on client side
   useEffect(() => {
     getFiles().then((data) => {
@@ -66,10 +67,7 @@ export default function FilesPage() {
             <Button asChild variant="outline">
               <Link href="/">대시보드로 이동</Link>
             </Button>
-            <Button 
-              variant="outline"
-              onClick={() => setShowGlobalGraph(true)}
-            >
+            <Button variant="outline" onClick={() => setShowGlobalGraph(true)}>
               <Network className="mr-2 h-4 w-4" />
               전체 지식 그래프
             </Button>
@@ -131,9 +129,9 @@ export default function FilesPage() {
           </CardContent>
         </Card>
       </div>
-      
+
       {/* Global Graph Modal */}
-      <GlobalGraphModal 
+      <GlobalGraphModal
         isOpen={showGlobalGraph}
         onClose={() => setShowGlobalGraph(false)}
       />
