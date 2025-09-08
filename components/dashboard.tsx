@@ -7,7 +7,8 @@ async function getDashboardData() {
   try {
     // In development, this will be proxied to the Python backend by the rewrite in next.config.mjs
     // In production, this needs to point to the deployed backend URL.
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    const backendUrl =
+      process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
     const res = await fetch(`${backendUrl}/api/dashboard`, {
       cache: 'no-store', // We want fresh data for the dashboard
     });
@@ -33,7 +34,7 @@ export async function Dashboard() {
   return (
     <div className="flex-1 flex-col overflow-y-auto border-r bg-black text-gray-300">
       <header className="h-16 flex items-center justify-between p-6 border-b border-neutral-800 bg-black sticky top-0 z-10">
-        <h1 className="text-xl font-bold text-white">Project SYSTEMA</h1>
+        <h1 className="text-xl font-bold text-white">URXLab</h1>
         <div className="flex gap-2">
           <Button
             asChild
