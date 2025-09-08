@@ -1,5 +1,7 @@
-import { Dashboard } from "@/components/dashboard"
-import { ChatPanel } from "@/components/chat-panel"
+export const dynamic = 'force-dynamic';
+
+import { Dashboard } from '@/components/dashboard';
+import { ChatPanel } from '@/components/chat-panel';
 
 // This page remains a simple layout wrapper.
 // The actual data fetching will happen inside the server components.
@@ -9,5 +11,5 @@ export default function QueryPage() {
       <Dashboard />
       <ChatPanel />
     </div>
-  )
+  );
 }
