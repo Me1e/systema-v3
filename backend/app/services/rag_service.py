@@ -742,6 +742,7 @@ def get_chat_response_stream(question: str):
                     grouped_sources[doc_id] = {
                         'documentId': doc_id,
                         'title': doc_title,
+                        'link': None,
                         'chunks': []
                     }
                 
@@ -751,6 +752,18 @@ def get_chat_response_stream(question: str):
                     'score': source['score'],
                     'metadata': source['metadata']
                 })
+            
+            # 문서 출처 링크(Supabase) 조회 후 주입
+            try:
+                doc_ids = [doc_id for doc_id in grouped_sources.keys() if doc_id and doc_id != 'unknown']
+                if doc_ids and supabase_client is not None:
+                    docs_resp = supabase_client.from_("documents").select("id, link").in_("id", doc_ids).execute()
+                    if docs_resp and getattr(docs_resp, 'data', None):
+                        id_to_link = {row.get("id"): row.get("link") for row in docs_resp.data}
+                        for d_id, group in grouped_sources.items():
+                            group['link'] = id_to_link.get(d_id)
+            except Exception as e:
+                logging.error(f"Failed to enrich sources with document links: {e}")
             
             # 상위 5개 문서만 선택 (각 문서의 최고 점수 기준)
             sorted_groups = sorted(

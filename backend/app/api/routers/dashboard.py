@@ -63,17 +63,20 @@ async def get_dashboard_data(driver: Driver = Depends(get_neo4j_driver)):
                 for src in sources_result:
                     # Try to get content preview from Supabase
                     preview = ""
+                    link = None
                     try:
-                        doc_response = supabase_client.from_("documents").select("content").eq("id", src["doc_id"]).single().execute()
+                        doc_response = supabase_client.from_("documents").select("content, link").eq("id", src["doc_id"]).single().execute()
                         if doc_response.data:
                             preview = doc_response.data["content"][:200] + "..."
+                            link = doc_response.data.get("link")
                     except:
                         preview = f"Document ID: {src['doc_id'][:8]}..."
                     
                     sources.append({
                         "type": "meeting", 
                         "title": src["title"], 
-                        "content": preview
+                        "content": preview,
+                        "link": link
                     })
 
                 tasks.append({

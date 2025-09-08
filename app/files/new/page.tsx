@@ -86,6 +86,16 @@ export default function FileAdditionPage() {
               />
             </div>
             <div className="space-y-2">
+              <Label htmlFor="link">출처 링크(URL, 선택)</Label>
+              <Input
+                id="link"
+                name="link"
+                type="url"
+                placeholder="https://example.com/source"
+                className="w-full"
+              />
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="content">회의록 내용</Label>
               <Textarea
                 id="content"

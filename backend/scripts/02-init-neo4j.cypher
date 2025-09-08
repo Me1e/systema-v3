@@ -42,7 +42,7 @@ CREATE INDEX chunk_document_id IF NOT EXISTS FOR (c:Chunk) ON (c.document_id);
 
 CREATE FULLTEXT INDEX entity_text_index IF NOT EXISTS FOR (n:Entity) ON EACH [n.id];
 
-// Document 노드용 벡터 인덱스 (3072 차원)
+// Document 노드용 벡터 인덱스 (768 차원)
 CREATE VECTOR INDEX `document_embeddings` IF NOT EXISTS
 FOR (d:Document) ON (d.embedding) 
 OPTIONS { indexConfig: {

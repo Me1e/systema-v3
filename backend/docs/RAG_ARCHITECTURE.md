@@ -209,10 +209,10 @@ ON EACH [c.text, c._node_content]
      - `SentenceSplitter`: 문서 청킹 (chunk_size=1024, chunk_overlap=128)
      - `StorageContext`: 저장소 컨텍스트 관리
 
-2. **LlamaIndex OpenAI Integration**
+2. **LlamaIndex OpenAI Integration** <- gemini로 바뀜
    - `llama_index.embeddings.openai.OpenAIEmbedding`
    - `llama_index.llms.gemini.Gemini` (LLM은 Gemini 사용)
-   - 실제 설정: `model="text-embedding-3-large"` (3072 dimensions)
+   - 실제 설정: `model="gemini.."` (768 dimensions)
 
 #### Neo4j 공식 문서
 

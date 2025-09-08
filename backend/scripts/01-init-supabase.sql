@@ -19,6 +19,7 @@ CREATE TABLE public.documents (
     created_at timestamp with time zone NOT NULL DEFAULT now(),
     title text NOT NULL,
     content text NOT NULL,
+    link text,
     status public.document_status NOT NULL DEFAULT 'PENDING'::public.document_status,
     theme text,
     summary text,
@@ -31,6 +32,7 @@ COMMENT ON COLUMN public.documents.id IS '고유 문서 ID';
 COMMENT ON COLUMN public.documents.created_at IS '생성 일시';
 COMMENT ON COLUMN public.documents.title IS '문서 제목';
 COMMENT ON COLUMN public.documents.content IS '문서 원본 내용';
+COMMENT ON COLUMN public.documents.link IS '문서 출처 URL (선택)';
 COMMENT ON COLUMN public.documents.status IS '수집 처리 상태 (PENDING, INGESTING, INGESTED, FAILED)';
 COMMENT ON COLUMN public.documents.theme IS '문서의 테마/카테고리 (개발, 설계, 기획, 마케팅, QA, 사업, 일반 회의, 기타)';
 COMMENT ON COLUMN public.documents.summary IS '문서의 AI 생성 요약 (ingestion 시 생성됨)';

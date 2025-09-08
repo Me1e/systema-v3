@@ -1,7 +1,17 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { CornerDownLeft, Loader, FileText, Search, Brain, Sparkles, ChevronDown, ChevronRight, FileCode } from 'lucide-react';
+import {
+  CornerDownLeft,
+  Loader,
+  FileText,
+  Search,
+  Brain,
+  Sparkles,
+  ChevronDown,
+  ChevronRight,
+  FileCode,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -22,10 +32,17 @@ interface Chunk {
 interface GroupedSource {
   documentId: string;
   title: string;
+  link?: string | null;
   chunks: Chunk[];
 }
 
-type ChatStatus = 'idle' | 'analyzing' | 'searching' | 'sources_found' | 'generating' | 'complete';
+type ChatStatus =
+  | 'idle'
+  | 'analyzing'
+  | 'searching'
+  | 'sources_found'
+  | 'generating'
+  | 'complete';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -40,7 +57,9 @@ export function ChatPanel() {
   const [isLoading, setIsLoading] = useState(false);
   const [currentStatus, setCurrentStatus] = useState<ChatStatus>('idle');
   const [expandedDocs, setExpandedDocs] = useState<Record<string, boolean>>({});
-  const [expandedChunks, setExpandedChunks] = useState<Record<string, boolean>>({});
+  const [expandedChunks, setExpandedChunks] = useState<Record<string, boolean>>(
+    {}
+  );
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -64,14 +83,19 @@ export function ChatPanel() {
 
     setIsLoading(true);
     const userQuestion = input; // Save the input before clearing
-    
+
     // Reset the ref for new message
     currentMessageRef.current = '';
     const userMessage: Message = { role: 'user', content: input };
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
 
-    const assistantMessage: Message = { role: 'assistant', content: '', sources: [], isLoading: true };
+    const assistantMessage: Message = {
+      role: 'assistant',
+      content: '',
+      sources: [],
+      isLoading: true,
+    };
     setMessages((prev) => [...prev, assistantMessage]);
 
     try {
@@ -106,7 +130,7 @@ export function ChatPanel() {
           if (line.startsWith('data: ')) {
             try {
               const data = JSON.parse(line.slice(6));
-              
+
               if (data.type === 'status') {
                 console.log('Status update:', data.status);
                 setCurrentStatus(data.status);
@@ -117,16 +141,20 @@ export function ChatPanel() {
                   return newMessages;
                 });
               } else if (data.type === 'token') {
-                console.log('Token received:', data.content.substring(0, 20) + '...');
+                console.log(
+                  'Token received:',
+                  data.content.substring(0, 20) + '...'
+                );
                 setCurrentStatus('generating');
-                
+
                 // Accumulate in ref first to avoid closure issues
                 currentMessageRef.current += data.content;
-                
+
                 // Update state with the complete accumulated content
                 setMessages((prev) => {
                   const newMessages = [...prev];
-                  newMessages[newMessages.length - 1].content = currentMessageRef.current;
+                  newMessages[newMessages.length - 1].content =
+                    currentMessageRef.current;
                   newMessages[newMessages.length - 1].isLoading = false;
                   return newMessages;
                 });
@@ -158,11 +186,27 @@ export function ChatPanel() {
     if (!isLoading || currentStatus === 'idle') return null;
 
     const statusConfig = {
-      analyzing: { icon: Brain, text: '질문 분석 중...', color: 'text-blue-400' },
-      searching: { icon: Search, text: '관련 정보 검색 중...', color: 'text-green-400' },
-      sources_found: { icon: FileText, text: '참조 문서 확인 중...', color: 'text-yellow-400' },
-      generating: { icon: Sparkles, text: '답변 생성 중...', color: 'text-purple-400' },
-      complete: { icon: Sparkles, text: '완료', color: 'text-gray-400' }
+      analyzing: {
+        icon: Brain,
+        text: '질문 분석 중...',
+        color: 'text-blue-400',
+      },
+      searching: {
+        icon: Search,
+        text: '관련 정보 검색 중...',
+        color: 'text-green-400',
+      },
+      sources_found: {
+        icon: FileText,
+        text: '참조 문서 확인 중...',
+        color: 'text-yellow-400',
+      },
+      generating: {
+        icon: Sparkles,
+        text: '답변 생성 중...',
+        color: 'text-purple-400',
+      },
+      complete: { icon: Sparkles, text: '완료', color: 'text-gray-400' },
     };
 
     const config = statusConfig[currentStatus] || statusConfig.analyzing;
@@ -199,98 +243,132 @@ export function ChatPanel() {
                     {m.content}
                   </div>
                 )}
-                {m.role === 'assistant' && m.sources && m.sources.length > 0 && (
-                  <Card className="p-3 bg-neutral-100">
-                    <div className="flex items-center gap-2 mb-3">
-                      <FileText className="h-4 w-4 text-neutral-600" />
-                      <span className="text-sm font-medium text-neutral-700">
-                        참조 문서
-                      </span>
-                    </div>
-                    <div className="space-y-3">
-                      {m.sources.map((doc, docIdx) => {
-                        const docKey = `${i}-${docIdx}`;
-                        const isDocExpanded = expandedDocs[docKey] ?? true; // 기본값: 펼쳐진 상태
-                        
-                        return (
-                          <div key={docIdx} className="border border-neutral-200 rounded-lg overflow-hidden">
-                            {/* 문서 헤더 */}
-                            <div 
-                              className="flex items-center gap-2 p-3 bg-neutral-50 cursor-pointer hover:bg-neutral-100 transition-colors"
-                              onClick={() => setExpandedDocs(prev => ({ ...prev, [docKey]: !isDocExpanded }))}
+                {m.role === 'assistant' &&
+                  m.sources &&
+                  m.sources.length > 0 && (
+                    <Card className="p-3 bg-neutral-100">
+                      <div className="flex items-center gap-2 mb-3">
+                        <FileText className="h-4 w-4 text-neutral-600" />
+                        <span className="text-sm font-medium text-neutral-700">
+                          참조 문서
+                        </span>
+                      </div>
+                      <div className="space-y-3">
+                        {m.sources.map((doc, docIdx) => {
+                          const docKey = `${i}-${docIdx}`;
+                          const isDocExpanded = expandedDocs[docKey] ?? true; // 기본값: 펼쳐진 상태
+
+                          return (
+                            <div
+                              key={docIdx}
+                              className="border border-neutral-200 rounded-lg overflow-hidden"
                             >
-                              {isDocExpanded ? (
-                                <ChevronDown className="h-4 w-4 text-neutral-500" />
-                              ) : (
-                                <ChevronRight className="h-4 w-4 text-neutral-500" />
-                              )}
-                              <FileCode className="h-4 w-4 text-neutral-600" />
-                              <span className="text-sm font-medium text-neutral-800 flex-1">
-                                {doc.title}
-                              </span>
-                              <Badge variant="outline" className="text-xs">
-                                {doc.chunks.length}개 청크
-                              </Badge>
-                            </div>
-                            
-                            {/* 청크 목록 */}
-                            {isDocExpanded && (
-                              <div className="p-3 space-y-2">
-                                {doc.chunks.map((chunk, chunkIdx) => {
-                                  const chunkKey = `${docKey}-${chunkIdx}`;
-                                  const isChunkExpanded = expandedChunks[chunkKey] ?? false;
-                                  
-                                  return (
-                                    <div 
-                                      key={chunkIdx} 
-                                      className="border border-neutral-100 rounded p-2 hover:bg-neutral-50 transition-colors"
+                              {/* 문서 헤더 */}
+                              <div
+                                className="flex items-center gap-2 p-3 bg-neutral-50 cursor-pointer hover:bg-neutral-100 transition-colors"
+                                onClick={() =>
+                                  setExpandedDocs((prev) => ({
+                                    ...prev,
+                                    [docKey]: !isDocExpanded,
+                                  }))
+                                }
+                              >
+                                {isDocExpanded ? (
+                                  <ChevronDown className="h-4 w-4 text-neutral-500" />
+                                ) : (
+                                  <ChevronRight className="h-4 w-4 text-neutral-500" />
+                                )}
+                                <FileCode className="h-4 w-4 text-neutral-600" />
+                                <span className="text-sm font-medium text-neutral-800 flex-1 flex items-center gap-2">
+                                  {doc.title}
+                                  {doc.link ? (
+                                    <a
+                                      href={doc.link}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-blue-600 hover:underline"
+                                      onClick={(e) => e.stopPropagation()}
+                                      aria-label="원문 링크 새 탭에서 열기"
+                                      title="원문 링크 열기"
                                     >
-                                      <div 
-                                        className="cursor-pointer"
-                                        onClick={() => setExpandedChunks(prev => ({ ...prev, [chunkKey]: !isChunkExpanded }))}
-                                      >
-                                        <div className="flex items-start justify-between gap-2 mb-1">
-                                          <span className="text-xs text-neutral-500">
-                                            청크 {chunkIdx + 1}
-                                          </span>
-                                          <span className="text-xs text-neutral-500">
-                                            관련도: {(chunk.score * 100).toFixed(1)}%
-                                          </span>
-                                        </div>
-                                        <p className="text-xs text-neutral-700">
-                                          {isChunkExpanded ? (
-                                            <span className="whitespace-pre-wrap">{chunk.text}</span>
-                                          ) : (
-                                            <>
-                                              {chunk.preview}
-                                              {chunk.text.length > 200 && (
-                                                <span className="text-blue-600 ml-1 hover:underline">
-                                                  [전체 보기]
-                                                </span>
-                                              )}
-                                            </>
-                                          )}
-                                        </p>
-                                      </div>
-                                    </div>
-                                  );
-                                })}
+                                      원문
+                                    </a>
+                                  ) : null}
+                                </span>
+                                <Badge variant="outline" className="text-xs">
+                                  {doc.chunks.length}개 청크
+                                </Badge>
                               </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </Card>
-                )}
+
+                              {/* 청크 목록 */}
+                              {isDocExpanded && (
+                                <div className="p-3 space-y-2">
+                                  {doc.chunks.map((chunk, chunkIdx) => {
+                                    const chunkKey = `${docKey}-${chunkIdx}`;
+                                    const isChunkExpanded =
+                                      expandedChunks[chunkKey] ?? false;
+
+                                    return (
+                                      <div
+                                        key={chunkIdx}
+                                        className="border border-neutral-100 rounded p-2 hover:bg-neutral-50 transition-colors"
+                                      >
+                                        <div
+                                          className="cursor-pointer"
+                                          onClick={() =>
+                                            setExpandedChunks((prev) => ({
+                                              ...prev,
+                                              [chunkKey]: !isChunkExpanded,
+                                            }))
+                                          }
+                                        >
+                                          <div className="flex items-start justify-between gap-2 mb-1">
+                                            <span className="text-xs text-neutral-500">
+                                              청크 {chunkIdx + 1}
+                                            </span>
+                                            <span className="text-xs text-neutral-500">
+                                              관련도:{' '}
+                                              {(chunk.score * 100).toFixed(1)}%
+                                            </span>
+                                          </div>
+                                          <p className="text-xs text-neutral-700">
+                                            {isChunkExpanded ? (
+                                              <span className="whitespace-pre-wrap">
+                                                {chunk.text}
+                                              </span>
+                                            ) : (
+                                              <>
+                                                {chunk.preview}
+                                                {chunk.text.length > 200 && (
+                                                  <span className="text-blue-600 ml-1 hover:underline">
+                                                    [전체 보기]
+                                                  </span>
+                                                )}
+                                              </>
+                                            )}
+                                          </p>
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </Card>
+                  )}
               </div>
             </div>
           ))}
-          {isLoading && currentStatus !== 'idle' && messages[messages.length - 1]?.role === 'assistant' && (
-            <div className="flex justify-start">
-              <StatusIndicator />
-            </div>
-          )}
+          {isLoading &&
+            currentStatus !== 'idle' &&
+            messages[messages.length - 1]?.role === 'assistant' && (
+              <div className="flex justify-start">
+                <StatusIndicator />
+              </div>
+            )}
         </div>
       </ScrollArea>
       <div className="p-4 bg-white border-t">

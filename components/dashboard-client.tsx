@@ -1,93 +1,105 @@
-"use client"
+'use client';
 
-import { useState, useEffect } from "react"
-import { Calendar, GitBranch, MessageSquare, LinkIcon } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { useState, useEffect } from 'react';
+import { Calendar, GitBranch, MessageSquare, LinkIcon } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 // Define types for the data received from the API
 interface TimelineItem {
-  period: string
-  count: number
+  period: string;
+  count: number;
 }
 
 interface Source {
-  type: "meeting" | "ref"
-  title: string
-  content: string
+  type: 'meeting' | 'ref';
+  title: string;
+  content: string;
+  link?: string | null;
 }
 
 interface Task {
-  id: string
-  theme: string
-  summaries: number
-  refs: number
-  detailedSummary: string
-  sources: Source[]
+  id: string;
+  theme: string;
+  summaries: number;
+  refs: number;
+  detailedSummary: string;
+  sources: Source[];
 }
 
 interface DashboardData {
-  timeline: TimelineItem[]
-  tasks: Task[]
+  timeline: TimelineItem[];
+  tasks: Task[];
 }
 
 interface DashboardClientProps {
-  initialData: DashboardData
+  initialData: DashboardData;
 }
 
 export function DashboardClient({ initialData }: DashboardClientProps) {
-  const [tasks, setTasks] = useState<Task[]>(initialData.tasks || [])
-  const [timeline, setTimeline] = useState<TimelineItem[]>(initialData.timeline || [])
+  const [tasks, setTasks] = useState<Task[]>(initialData.tasks || []);
+  const [timeline, setTimeline] = useState<TimelineItem[]>(
+    initialData.timeline || []
+  );
   const [selectedTask, setSelectedTask] = useState<Task | null>(
-    initialData.tasks && initialData.tasks.length > 0 ? initialData.tasks[0] : null,
-  )
-  const [loadingSummaries, setLoadingSummaries] = useState<Record<string, boolean>>({})
-  const [summaryErrors, setSummaryErrors] = useState<Record<string, boolean>>({})
+    initialData.tasks && initialData.tasks.length > 0
+      ? initialData.tasks[0]
+      : null
+  );
+  const [loadingSummaries, setLoadingSummaries] = useState<
+    Record<string, boolean>
+  >({});
+  const [summaryErrors, setSummaryErrors] = useState<Record<string, boolean>>(
+    {}
+  );
 
   // Function to load theme summary on demand
   const loadThemeSummary = async (theme: string) => {
-    if (loadingSummaries[theme]) return // Already loading
-    
-    setLoadingSummaries(prev => ({ ...prev, [theme]: true }))
-    
+    if (loadingSummaries[theme]) return; // Already loading
+
+    setLoadingSummaries((prev) => ({ ...prev, [theme]: true }));
+
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
-      const response = await fetch(`${backendUrl}/api/dashboard/theme-summary/${encodeURIComponent(theme)}`)
-      
+      const backendUrl =
+        process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      const response = await fetch(
+        `${backendUrl}/api/dashboard/theme-summary/${encodeURIComponent(theme)}`
+      );
+
       if (response.ok) {
-        const data = await response.json()
-        setTasks(prevTasks => 
-          prevTasks.map(t => 
-            t.theme === theme 
-              ? { ...t, detailedSummary: data.summary }
-              : t
+        const data = await response.json();
+        setTasks((prevTasks) =>
+          prevTasks.map((t) =>
+            t.theme === theme ? { ...t, detailedSummary: data.summary } : t
           )
-        )
-        
+        );
+
         // Update selected task if it's the current one
-        const updatedTask = tasks.find(t => t.theme === theme)
+        const updatedTask = tasks.find((t) => t.theme === theme);
         if (updatedTask && selectedTask?.theme === theme) {
-          setSelectedTask({ ...updatedTask, detailedSummary: data.summary })
+          setSelectedTask({ ...updatedTask, detailedSummary: data.summary });
         }
       } else {
-        setSummaryErrors(prev => ({ ...prev, [theme]: true }))
+        setSummaryErrors((prev) => ({ ...prev, [theme]: true }));
       }
     } catch (error) {
-      console.error(`Failed to load summary for theme ${theme}:`, error)
-      setSummaryErrors(prev => ({ ...prev, [theme]: true }))
+      console.error(`Failed to load summary for theme ${theme}:`, error);
+      setSummaryErrors((prev) => ({ ...prev, [theme]: true }));
     } finally {
-      setLoadingSummaries(prev => ({ ...prev, [theme]: false }))
+      setLoadingSummaries((prev) => ({ ...prev, [theme]: false }));
     }
-  }
+  };
 
   const handleTaskSelect = (task: Task) => {
-    setSelectedTask(task)
-  }
+    setSelectedTask(task);
+  };
 
   return (
     <div className="p-6 space-y-8">
       {/* Timeline View */}
       <div>
-        <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">Timeline</h3>
+        <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">
+          Timeline
+        </h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {timeline.map((item) => (
             <div
@@ -107,15 +119,17 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
 
       {/* Task Summaries */}
       <div>
-        <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">Task Summaries</h3>
+        <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">
+          Task Summaries
+        </h3>
         <div className="space-y-2">
           {tasks.map((task) => (
             <div
               key={task.id}
               onClick={() => handleTaskSelect(task)}
               className={cn(
-                "p-3 flex items-center justify-between border border-transparent cursor-pointer hover:bg-neutral-900 hover:border-neutral-700",
-                selectedTask?.id === task.id && "bg-neutral-900 border-blue-500",
+                'p-3 flex items-center justify-between border border-transparent cursor-pointer hover:bg-neutral-900 hover:border-neutral-700',
+                selectedTask?.id === task.id && 'bg-neutral-900 border-blue-500'
               )}
             >
               <div className="flex items-center gap-4">
@@ -138,7 +152,9 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
           </h3>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-1 bg-neutral-950 border border-neutral-800 p-4">
-              <h4 className="font-semibold text-white mb-2">Synthesized Summary</h4>
+              <h4 className="font-semibold text-white mb-2">
+                Synthesized Summary
+              </h4>
               {loadingSummaries[selectedTask.theme] ? (
                 <div className="space-y-2">
                   <div className="h-4 bg-neutral-800 rounded animate-pulse"></div>
@@ -148,14 +164,18 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
                 </div>
               ) : summaryErrors[selectedTask.theme] ? (
                 <p className="text-sm text-gray-400 leading-relaxed">
-                  요약을 불러올 수 없습니다. {selectedTask.theme} 테마와 관련된 회의록들의 종합 요약입니다.
+                  요약을 불러올 수 없습니다. {selectedTask.theme} 테마와 관련된
+                  회의록들의 종합 요약입니다.
                 </p>
               ) : selectedTask.detailedSummary ? (
-                <p className="text-sm text-gray-400 leading-relaxed">{selectedTask.detailedSummary}</p>
+                <p className="text-sm text-gray-400 leading-relaxed">
+                  {selectedTask.detailedSummary}
+                </p>
               ) : (
                 <div className="space-y-3">
                   <p className="text-sm text-gray-400 leading-relaxed">
-                    {selectedTask.theme} 테마와 관련된 회의록들의 종합 요약을 보려면 클릭하세요.
+                    {selectedTask.theme} 테마와 관련된 회의록들의 종합 요약을
+                    보려면 클릭하세요.
                   </p>
                   <button
                     onClick={() => loadThemeSummary(selectedTask.theme)}
@@ -169,16 +189,36 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
             <div className="lg:col-span-2 space-y-3">
               <h4 className="font-semibold text-white mb-2">Sources</h4>
               {selectedTask.sources.map((source, index) => (
-                <div key={index} className="bg-neutral-900 border border-neutral-800 p-4">
+                <div
+                  key={index}
+                  className="bg-neutral-900 border border-neutral-800 p-4"
+                >
                   <div className="flex items-center gap-3 mb-2">
-                    {source.type === "meeting" ? (
+                    {source.type === 'meeting' ? (
                       <MessageSquare className="h-4 w-4 text-neutral-500" />
                     ) : (
                       <LinkIcon className="h-4 w-4 text-neutral-500" />
                     )}
-                    <h5 className="font-medium text-white">{source.title}</h5>
+                    <h5 className="font-medium text-white flex items-center gap-2">
+                      {source.title}
+                      {source.link ? (
+                        <a
+                          href={source.link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-400 hover:text-blue-300"
+                          onClick={(e) => e.stopPropagation()}
+                          aria-label="원문 링크 새 탭에서 열기"
+                          title="원문 링크 열기"
+                        >
+                          <LinkIcon className="h-4 w-4" />
+                        </a>
+                      ) : null}
+                    </h5>
                   </div>
-                  <p className="text-sm text-gray-400 line-clamp-2">{source.content}</p>
+                  <p className="text-sm text-gray-400 line-clamp-2">
+                    {source.content}
+                  </p>
                 </div>
               ))}
             </div>
@@ -186,5 +226,5 @@ export function DashboardClient({ initialData }: DashboardClientProps) {
         </div>
       )}
     </div>
-  )
+  );
 }

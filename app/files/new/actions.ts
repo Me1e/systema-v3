@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache';
 
 export async function addDocument(prevState: any, formData: FormData) {
   const title = formData.get('title') as string;
+  const link = (formData.get('link') as string) || null;
   const content = formData.get('content') as string;
   const labelsRaw = formData.get('labels') as string;
 
@@ -26,7 +27,7 @@ export async function addDocument(prevState: any, formData: FormData) {
 
   const { data: document, error: docError } = await supabase
     .from('documents')
-    .insert({ title, content })
+    .insert({ title, content, link })
     .select()
     .single();
 
