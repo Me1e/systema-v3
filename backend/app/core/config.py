@@ -14,14 +14,14 @@ class Settings(BaseSettings):
     NEO4J_USERNAME: str
     NEO4J_PASSWORD: str
 
-    # OpenAI
-    OPENAI_API_KEY: str
+    # OpenAI (옵션: 현재 임베딩은 Gemini 사용)
+    OPENAI_API_KEY: str | None = None
 
     # Google
     GOOGLE_API_KEY: str
 
     # Model Names
-    LLM_MODEL: str = "gemini-2.5-pro" # As requested by user
+    LLM_MODEL: str = "gemini-2.5-pro"
 
     class Config:
         env_file = ".env"

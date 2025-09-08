@@ -28,7 +28,7 @@ DROP CONSTRAINT entity_unique IF EXISTS;
 CREATE VECTOR INDEX `vector` IF NOT EXISTS
 FOR (c:Chunk) ON (c.embedding)
 OPTIONS { indexConfig: {
-  `vector.dimensions`: 3072,
+  `vector.dimensions`: 768,
   `vector.similarity_function`: 'cosine'
 }};
 
@@ -46,7 +46,7 @@ CREATE FULLTEXT INDEX entity_text_index IF NOT EXISTS FOR (n:Entity) ON EACH [n.
 CREATE VECTOR INDEX `document_embeddings` IF NOT EXISTS
 FOR (d:Document) ON (d.embedding) 
 OPTIONS { indexConfig: {
-  `vector.dimensions`: 3072,
+  `vector.dimensions`: 768,
   `vector.similarity_function`: 'cosine'
 }};
 

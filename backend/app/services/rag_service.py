@@ -12,7 +12,7 @@ from llama_index.core import (
     KnowledgeGraphIndex, # 추가
 )
 from llama_index.core.node_parser import SentenceSplitter
-from llama_index.embeddings.openai import OpenAIEmbedding
+from llama_index.embeddings.gemini import GeminiEmbedding
 from llama_index.llms.gemini import Gemini
 from llama_index.vector_stores.neo4jvector import Neo4jVectorStore
 from llama_index.graph_stores.neo4j import Neo4jGraphStore # 추가
@@ -67,12 +67,12 @@ def initialize_rag_settings():
     
     llm = Gemini(model_name=settings.LLM_MODEL, api_key=settings.GOOGLE_API_KEY)
 
-    # OpenAI 임베딩(3072차원) 사용 - 초기화 시 외부 호출 없음
-    embed_model = OpenAIEmbedding(
-        model="text-embedding-3-large",
-        api_key=settings.OPENAI_API_KEY,
+    # Gemini 임베딩(기본 768차원) 사용 - 초기화 시 외부 호출 없음
+    embed_model = GeminiEmbedding(
+        model_name="models/embedding-001",
+        api_key=settings.GOOGLE_API_KEY,
     )
-    logging.info("Embedding model configured: OpenAI text-embedding-3-large (3072 dims)")
+    logging.info("Embedding model configured: Gemini embedding-001 (768 dims)")
     node_parser = SentenceSplitter(chunk_size=1024, chunk_overlap=128)  # 청크 사이즈 최적화 (한국어 회의록용)
 
     LlamaSettings.llm = llm
@@ -86,7 +86,7 @@ def initialize_rag_settings():
         url=settings.NEO4J_URI,
         username=settings.NEO4J_USERNAME,
         password=settings.NEO4J_PASSWORD,
-        embedding_dimension=3072,  # OpenAI text-embedding-3-large 차원과 일치
+        embedding_dimension=768,  # Gemini embedding-001 차원과 일치
         database="neo4j"
     )
     # logging.info("Neo4j 벡터 저장소 초기화 완료")
