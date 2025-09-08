@@ -15,6 +15,7 @@ pnpm dev      # Start development server at http://localhost:3000
 pnpm build    # Create production build
 pnpm start    # Start production server
 pnpm lint     # Run ESLint (currently errors are ignored in builds)
+docker compose -f deploy/docker-compose.dev.yml up   # Run frontend+backend in dev containers
 ```
 
 ### Backend (FastAPI)

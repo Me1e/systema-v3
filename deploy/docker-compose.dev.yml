@@ -1,0 +1,30 @@
+services:
+  backend-dev:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.backend
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    env_file:
+      - ../backend/.env
+      - ../.env.local
+    ports:
+      - '8000:8000'
+    volumes:
+      - ../backend:/app/backend
+    restart: unless-stopped
+
+  next-dev:
+    image: node:20-alpine
+    working_dir: /app
+    command: sh -lc "corepack enable && corepack prepare pnpm@9.7.1 --activate && pnpm i && pnpm dev -p 3000"
+    environment:
+      NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+    ports:
+      - '3000:3000'
+    volumes:
+      - ../:/app
+    depends_on:
+      - backend-dev
+    restart: unless-stopped

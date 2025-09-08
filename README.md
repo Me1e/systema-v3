@@ -84,6 +84,21 @@ NEXT_PUBLIC_API_URL=http://localhost:8000
 
 3. 브라우저에서 http://localhost:3000 접속
 
+### 3.5. 로컬 개발 - Docker Compose(dev)로 동시 실행/로그 워치
+
+- 동시 실행:
+
+```bash
+docker compose -f deploy/docker-compose.dev.yml up
+```
+
+- 백그라운드 실행 + 로그 보기:
+
+```bash
+docker compose -f deploy/docker-compose.dev.yml up -d
+docker compose -f deploy/docker-compose.dev.yml logs -f backend-dev next-dev | cat
+```
+
 ### 3.4. 프로덕션 인프라 개요 (Hetzner)
 
 - Caddy(80/443) → path 기반 라우팅: `/api/*` → FastAPI(backend:8000), 그 외 → Next(next:3000)

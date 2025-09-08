@@ -122,28 +122,13 @@ EMBEDDING_MODEL=models/embedding-001
 pnpm install
 ```
 
-### 주요 프론트엔드 의존성
-
-- **React Flow**: 지식 그래프 시각화를 위한 노드 기반 UI 라이브러리
-- **@dagrejs/dagre**: 계층적 그래프 레이아웃 알고리즘
-- **d3-force**: 물리 시뮬레이션 기반 그래프 레이아웃
-- **d3-scale**: D3.js의 스케일 유틸리티
-
-## 5. 애플리케이션 실행
-
-### 터미널 1: 백엔드 실행
+## 5. 애플리케이션 실행 (Docker Compose - 권장)
 
 ```bash
-cd backend
-source venv/bin/activate  # 가상환경 활성화
-uvicorn app.main:app --reload --port 8000
-```
-
-### 터미널 2: 프론트엔드 실행
-
-```bash
-# 프로젝트 루트에서
-pnpm dev
+docker compose -f deploy/docker-compose.dev.yml up
+# 또는 백그라운드 실행 후 로그
+docker compose -f deploy/docker-compose.dev.yml up -d
+docker compose -f deploy/docker-compose.dev.yml logs -f backend-dev next-dev | cat
 ```
 
 ## 6. 애플리케이션 사용
@@ -179,14 +164,12 @@ pnpm dev
 
 ## 개발 팁
 
-1. **로그 확인**: 백엔드 터미널에서 상세 로그 확인 가능
+1. **로그 확인**: Docker Compose 로그를 실시간으로 확인 (`logs -f`)
 2. **Neo4j Browser**: 데이터가 제대로 저장되는지 Cypher 쿼리로 확인
 3. **Supabase 대시보드**: documents 테이블에서 상태 변화 모니터링
 
 ## 프로덕션 배포
 
-1. **프론트엔드**: Vercel에 배포 (자동)
-2. **백엔드**:
-   - Docker 컨테이너화 권장
-   - Cloud Run, AWS Lambda, 또는 전용 서버 사용
-   - 환경변수는 각 플랫폼의 시크릿 관리 기능 사용
+1. **인프라**: Hetzner + Docker Compose + Caddy(80/443, `/api/*` → backend:8000)
+2. **실행**: `docker compose -f deploy/docker-compose.yml up -d --build`
+3. **환경변수**: 서버 루트 `.env`로 관리 (공개/비공개 분리)
