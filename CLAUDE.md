@@ -20,10 +20,7 @@ docker compose -f deploy/docker-compose.dev.yml up   # Run frontend+backend in d
 
 ### Backend (FastAPI)
 
-```bash
-cd backend
-uvicorn app.main:app --reload  # Start backend at http://localhost:8000
-```
+개발은 Docker Compose(dev)로 실행하세요.
 
 ## Architecture
 

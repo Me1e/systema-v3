@@ -25,7 +25,7 @@ Project SYSTEMA는 한국어 회의록을 위한 지능형 인터페이스를 �
 
 **중요**: `TypeError: fetch failed` 와 같은 에러는 대부분 아래 환경 변수가 잘못 설정되었을 때 발생합니다.
 
-\`\`\`.env.local
+```.env.local
 
 # Supabase 접속 정보 (Project Settings > API > Project URL and Service Role Key)
 
@@ -50,7 +50,7 @@ GOOGLE_API_KEY="your-google-api-key"
 # API URL (백엔드 서버 주소)
 
 NEXT_PUBLIC_API_URL=http://localhost:8000
-\`\`\`
+```
 
 ### 3.2. 데이터베이스 초기화
 
@@ -67,34 +67,11 @@ NEXT_PUBLIC_API_URL=http://localhost:8000
 
 ### 3.3. 서비스 실행 (개발)
 
-1. **백엔드 서버 실행** (먼저 실행):
-
-   ```bash
-   cd backend
-   pip install -r requirements.txt
-   uvicorn app.main:app --reload --port 8000
-   ```
-
-2. **프론트엔드 서버 실행** (별도 터미널):
-
-   ```bash
-   pnpm install
-   pnpm dev
-   ```
-
-3. 브라우저에서 http://localhost:3000 접속
-
-### 3.5. 로컬 개발 - Docker Compose(dev)로 동시 실행/로그 워치
-
-- 동시 실행:
+- Docker Compose(dev)로 동시 실행/로그 워치
 
 ```bash
 docker compose -f deploy/docker-compose.dev.yml up
-```
-
-- 백그라운드 실행 + 로그 보기:
-
-```bash
+# 또는 백그라운드 실행 + 로그 보기
 docker compose -f deploy/docker-compose.dev.yml up -d
 docker compose -f deploy/docker-compose.dev.yml logs -f backend-dev next-dev | cat
 ```

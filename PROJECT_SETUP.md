@@ -10,61 +10,15 @@
 6. **Google Cloud** 계정 (Gemini API)
 7. (옵션) **OpenAI** 계정
 
-## 1. Python 환경 설정
+## 1. (선택) 백엔드를 로컬에서 직접 실행할 때만
 
-Python 3.11 또는 3.12 버전이 필요합니다. 가상환경(`venv`)은 특정 버전의 Python을 새로 설치하는 도구가 아니므로, 먼저 시스템에 원하는 버전의 Python 인터프리터를 설치해야 합니다.
-
-`pyenv`를 사용하면 시스템의 기본 Python 설정을 변경하지 않고 여러 Python 버전을 손쉽게 관리할 수 있어 권장됩니다.
-
-### 1.1. `pyenv`를 사용한 Python 설치 및 가상환경 설정 (권장)
+Docker Compose(dev)를 사용하는 경우 이 섹션은 건너뛰세요. 컨테이너 없이 백엔드를 직접 띄워야 할 때만 아래를 실행합니다.
 
 ```bash
-# 1. pyenv 설치 (아직 설치하지 않은 경우)
-brew install pyenv
-
-# 2. pyenv를 통해 Python 3.11.9 설치
-pyenv install 3.11.9
-
-# 3. backend 디렉토리로 이동
 cd backend
-
-# 4. 해당 디렉토리에서 사용할 Python 버전을 3.11.9로 지정
-pyenv local 3.11.9
-
-# 5. 가상환경 생성 (pyenv local로 버전이 지정되었으므로 'python' 사용)
-python -m venv venv
-
-# 6. 가상환경 활성화
-source venv/bin/activate  # macOS/Linux
-# Windows: venv\Scripts\activate
-```
-
-### 1.2. `Homebrew`를 사용한 설치 (대안)
-
-`pyenv`를 사용하지 않고 Homebrew로 직접 Python 3.11을 설치할 수도 있습니다.
-
-```bash
-# 1. Homebrew로 Python 3.11 설치
-brew install python@3.11
-
-# 2. backend 디렉토리로 이동
-cd backend
-
-# 3. 설치된 python3.11을 이용해 가상환경 생성
-python3.11 -m venv venv
-
-# 4. 가상환경 활성화
-source venv/bin/activate  # macOS/Linux
-# Windows: venv\Scripts\activate
-```
-
-### 1.3. Python 의존성 설치
-
-가상환경이 활성화된 상태에서 아래 명령어를 실행하여 필요한 패키지를 설치합니다.
-
-```bash
-pip install --upgrade pip
+python3 -m venv .venv && source .venv/bin/activate  # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8000
 ```
 
 ## 2. 환경 변수 설정
