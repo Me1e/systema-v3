@@ -36,4 +36,4 @@ jobs:
             ./ ${{ secrets.USER }}@${{ secrets.HOST }}:${{ secrets.REMOTE_PATH }}
       - name: Compose up
         run: |
-          ssh ${{ secrets.USER }}@${{ secrets.HOST }} "set -euo pipefail; cd ${{ secrets.REMOTE_PATH }}; ENV_FILE=\".env\"; if [ ! -f \"$ENV_FILE\" ]; then for CAND in .env ../.env \$HOME/.env \$HOME/systema-v3/.env /opt/systema-v3/.env; do if [ -f \"$CAND\" ]; then ENV_FILE=\"$CAND\"; break; fi; done; fi; if [ ! -f \"$ENV_FILE\" ]; then echo 'ERROR: .env not found on server'; exit 1; fi; ln -sf \"$ENV_FILE\" .env; echo Using env file: \"$ENV_FILE\"; docker compose --env-file \"$ENV_FILE\" -f deploy/docker-compose.yml up -d --build"
+          ssh ${{ secrets.USER }}@${{ secrets.HOST }} "set -euo pipefail; cd ${{ secrets.REMOTE_PATH }}; if [ ! -f .env ]; then CAND=\"\"; CAND=$(find . .. \$HOME /opt -maxdepth 3 -type f -name .env 2>/dev/null | head -n1 || true); if [ -z \"$CAND\" ]; then echo 'ERROR: .env not found on server'; pwd; ls -la; exit 1; fi; cp -f \"$CAND\" .env; echo Copied env file: \"$CAND\" -> .env; fi; docker compose -f deploy/docker-compose.yml up -d --build"
