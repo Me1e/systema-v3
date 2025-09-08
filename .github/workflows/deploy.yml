@@ -36,4 +36,4 @@ jobs:
             ./ ${{ secrets.USER }}@${{ secrets.HOST }}:${{ secrets.REMOTE_PATH }}
       - name: Compose up
         run: |
-          ssh ${{ secrets.USER }}@${{ secrets.HOST }} "cd ${{ secrets.REMOTE_PATH }} && docker compose --env-file .env -f deploy/docker-compose.yml up -d --build"
+          ssh ${{ secrets.USER }}@${{ secrets.HOST }} "set -euo pipefail; cd ${{ secrets.REMOTE_PATH }}; ENV_FILE=\".env\"; if [ ! -f \"$ENV_FILE\" ]; then for CAND in .env ../.env \$HOME/.env \$HOME/systema-v3/.env /opt/systema-v3/.env; do if [ -f \"$CAND\" ]; then ENV_FILE=\"$CAND\"; break; fi; done; fi; if [ ! -f \"$ENV_FILE\" ]; then echo 'ERROR: .env not found on server'; exit 1; fi; ln -sf \"$ENV_FILE\" .env; echo Using env file: \"$ENV_FILE\"; docker compose --env-file \"$ENV_FILE\" -f deploy/docker-compose.yml up -d --build"
