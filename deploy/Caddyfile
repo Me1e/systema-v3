@@ -1,0 +1,16 @@
+{
+  email {$ACME_EMAIL}
+}
+
+{$APP_DOMAIN} {
+  encode gzip
+
+  @api path /api/*
+  reverse_proxy @api backend:8000 {
+    flush_interval -1
+  }
+
+  reverse_proxy next:3000
+}
+
+
