@@ -34,7 +34,7 @@ export async function Dashboard() {
   return (
     <div className="flex-1 flex-col overflow-y-auto border-r bg-black text-gray-300">
       <header className="h-16 flex items-center justify-between p-6 border-b border-neutral-800 bg-black sticky top-0 z-10">
-        <h1 className="text-xl font-bold text-white">URXLab</h1>
+        <h1 className="text-xl font-bold text-white">UXRLab</h1>
         <div className="flex gap-2">
           <Button
             asChild

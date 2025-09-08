@@ -9,6 +9,7 @@ Project SYSTEMA is an intelligent Korean data interface for processing and query
 ## Key Commands
 
 ### Frontend (Next.js)
+
 ```bash
 pnpm dev      # Start development server at http://localhost:3000
 pnpm build    # Create production build
@@ -17,6 +18,7 @@ pnpm lint     # Run ESLint (currently errors are ignored in builds)
 ```
 
 ### Backend (FastAPI)
+
 ```bash
 cd backend
 uvicorn app.main:app --reload  # Start backend at http://localhost:8000
@@ -25,6 +27,7 @@ uvicorn app.main:app --reload  # Start backend at http://localhost:8000
 ## Architecture
 
 ### Tech Stack
+
 - **Frontend**: Next.js 15.2.4, React 19, Tailwind CSS, Radix UI
 - **Backend**: Python FastAPI, LlamaIndex
 - **AI/LLM**: Google Gemini 2.5 Pro Latest (generation), Gemini embedding-001 (768 dims)
@@ -33,7 +36,9 @@ uvicorn app.main:app --reload  # Start backend at http://localhost:8000
 - **Graph Visualization**: React Flow, @dagrejs/dagre, d3-force, d3-scale
 
 ### API Structure
+
 The backend exposes the following endpoints:
+
 - `/api/chat` - Handles chat queries using hybrid RAG with source citations (SSE streaming)
 - `/api/ingest` - Processes documents for indexing
 - `/api/ingest/{id}/details` - Returns chunking visualization data
@@ -41,19 +46,22 @@ The backend exposes the following endpoints:
 - `/api/dashboard` - Provides dashboard statistics with synthesized summaries
 - `/api/graph/all` - Returns entire knowledge graph data with configurable limits
 
-Frontend connects directly to the FastAPI backend (no proxy) for real-time SSE streaming.
+Prod: Caddy reverse-proxies `/api/*` to FastAPI on the same domain; Dev: Next.js rewrite proxies `/api/*` to `http://127.0.0.1:8000`.
 
 ### Data Flow
+
 1. **Document Ingestion**: Admin UI → `/api/ingest` → LlamaIndex → Neo4j/Supabase
 2. **Query Processing**: Chat UI → `/api/chat` → Hybrid retrieval → LLM generation
 
 ### Database Schema
 
 **Supabase (PostgreSQL)**:
+
 - `documents` table: Stores document content and status (PENDING, INGESTING, INGESTED, FAILED)
 - `labels` table: Key-value metadata for documents
 
 **Neo4j**:
+
 - Document nodes with vector embeddings (768 dimensions)
 - Chunk nodes for document segments
 - Knowledge graph entities and relationships
@@ -62,35 +70,62 @@ Frontend connects directly to the FastAPI backend (no proxy) for real-time SSE s
 ## Development Notes
 
 ### Environment Variables
-Required in `.env.local`:
+
+- `.env.local` (frontend dev only):
+
 ```
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
+NEXT_PUBLIC_API_URL=http://localhost:8000
+```
+
+- `backend/.env` (backend secrets):
+
+```
+SUPABASE_URL=
 SUPABASE_SERVICE_ROLE_KEY=
 NEO4J_URI=
 NEO4J_USERNAME=
 NEO4J_PASSWORD=
 GOOGLE_API_KEY=
-OPENAI_API_KEY=
-NEXT_PUBLIC_API_URL=http://localhost:8000
+LLM_MODEL=gemini-2.5-pro
+```
+
+- Server `.env` (Docker Compose runtime):
+
+```
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_URL=
+SUPABASE_SERVICE_ROLE_KEY=
+NEO4J_URI=
+NEO4J_USERNAME=
+NEO4J_PASSWORD=
+GOOGLE_API_KEY=
+LLM_MODEL=gemini-2.5-pro
+APP_DOMAIN=
+ACME_EMAIL=
 ```
 
 ### Database Initialization
+
 1. Run `backend/scripts/01-init-supabase.sql` for Supabase tables
 2. Run `backend/scripts/02-init-neo4j.cypher` for Neo4j indexes
 
 ### UI Design Philosophy
+
 - Palantir-inspired clean, professional interface
 - Two-column layout: Dashboard (left) + Chatbot (right)
 - Dark theme with sharp, minimal design
 - Interactive timeline and task summaries
 
 ### Important Patterns
+
 - TypeScript errors are ignored during builds (for rapid development)
 - CORS is currently open (needs restriction for production)
 - All AI operations happen in Python backend, not frontend
 - Frontend focuses purely on UI/UX concerns
-- Direct API connection from browser to FastAPI (no Next.js proxy)
+- Same-domain API via Caddy in prod; Next.js rewrite in dev
 - Real-time SSE streaming with status updates (analyzing → searching → generating)
 - Source citations are included in chat responses with relevance scores
 - Ingestion visualization shows chunks and graph nodes/relationships
@@ -105,6 +140,7 @@ NEXT_PUBLIC_API_URL=http://localhost:8000
 - Entity label in Neo4j is `Entity` (not `__Entity__`)
 
 ### Known Issues and Future Improvements
+
 - Chunking/query performance optimization needed
 - Task unit clarification and summary format improvements
 - Production security hardening (CORS restrictions, API keys)

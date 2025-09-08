@@ -8,7 +8,7 @@
 4. **Neo4j AuraDB** 계정
 5. **Supabase** 계정
 6. **Google Cloud** 계정 (Gemini API)
-7. **OpenAI** 계정 (임베딩용)
+7. (옵션) **OpenAI** 계정
 
 ## 1. Python 환경 설정
 
@@ -69,22 +69,20 @@ pip install -r requirements.txt
 
 ## 2. 환경 변수 설정
 
-### 프로젝트 루트에 `.env.local` 파일 생성
+### 프로젝트 루트에 `.env.local` 파일 생성 (프론트 공개값만)
 
 ```bash
 # Supabase 설정 (Project Settings > API에서 확인)
 NEXT_PUBLIC_SUPABASE_URL=https://[your-project-ref].supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=[your-anon-key]
-SUPABASE_SERVICE_ROLE_KEY=[your-service-role-key]
+NEXT_PUBLIC_API_URL=http://localhost:8000
 
 # Neo4j AuraDB 설정 (Connection details에서 확인)
 NEO4J_URI=neo4j+s://[your-instance].databases.neo4j.io
 NEO4J_USERNAME=neo4j
 NEO4J_PASSWORD=[your-password]
 
-# AI API 키
-GOOGLE_API_KEY=[your-google-api-key]  # Google AI Studio에서 생성
-OPENAI_API_KEY=sk-[your-openai-key]   # OpenAI 대시보드에서 생성
+# 백엔드 비밀키는 backend/.env에만 둡니다.
 ```
 
 ### 백엔드용 `.env` 파일 생성 (`backend/.env`)
