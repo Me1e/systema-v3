@@ -14,6 +14,12 @@ from llama_index.core import (
 from llama_index.core.node_parser import SentenceSplitter
 from llama_index.embeddings.gemini import GeminiEmbedding
 from llama_index.llms.gemini import Gemini
+try:
+    # 2025 라이브러리: genai.configure 필요시 대비
+    import google.generativeai as genai
+    _HAS_GOOGLE_GENAI = True
+except Exception:
+    _HAS_GOOGLE_GENAI = False
 from llama_index.vector_stores.neo4jvector import Neo4jVectorStore
 from llama_index.graph_stores.neo4j import Neo4jGraphStore # 추가
 
@@ -65,6 +71,12 @@ def initialize_rag_settings():
     """
     # logging.info("RAG 설정 초기화 시작...")
     
+    # 보강: 일부 환경에서 GOOGLE_API_KEY 인식 문제 대비하여 사전 구성
+    if _HAS_GOOGLE_GENAI and settings.GOOGLE_API_KEY:
+        try:
+            genai.configure(api_key=settings.GOOGLE_API_KEY)
+        except Exception:
+            pass
     llm = Gemini(model_name=settings.LLM_MODEL, api_key=settings.GOOGLE_API_KEY)
 
     # Gemini 임베딩(기본 768차원) 사용 - 초기화 시 외부 호출 없음
