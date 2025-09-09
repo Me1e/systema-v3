@@ -4,6 +4,12 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
+    paths-ignore:
+      - '**/*.md'
+      - '.github/ISSUE_TEMPLATE/**'
+      - '.gitignore'
+      - 'LICENSE'
+      - 'docs/**'
 
 jobs:
   deploy:
@@ -44,7 +50,12 @@ jobs:
         run: |
           if [ -n "${ENV_FILE}" ]; then
             ssh ${{ secrets.USER }}@${{ secrets.HOST }} "mkdir -p ${{ secrets.REMOTE_PATH }}"
-            printf '%s\n' "${ENV_FILE}" | ssh ${{ secrets.USER }}@${{ secrets.HOST }} "cat > ${{ secrets.REMOTE_PATH }}/.env"
+            printf '%s\n' "${ENV_FILE}" | ssh ${{ secrets.USER }}@${{ secrets.HOST }} "cat > ${{ secrets.REMOTE_PATH }}/.env.new"
+            # 서버에서 기존 .env와 비교하여 동일하면 교체하지 않음
+            ssh ${{ secrets.USER }}@${{ secrets.HOST }} "cd ${{ secrets.REMOTE_PATH }}; \
+              if [ -f .env ]; then \
+                if cmp -s .env.new .env; then echo 'ENV unchanged: keeping existing .env'; rm -f .env.new; touch .env.changed.flag; rm -f .env.changed.flag; else mv -f .env.new .env; echo 'ENV updated'; touch .env.changed.flag; fi; \
+              else mv -f .env.new .env; echo 'ENV created'; fi"
           else
             echo "ENV_FILE not provided; skipping upload"
           fi
@@ -54,7 +65,9 @@ jobs:
           ENV_FILE: ${{ secrets.ENV_FILE }}
         run: |
           FORCE=""
-          if [ -n "${ENV_FILE}" ]; then FORCE="--force-recreate"; fi
+          # 서버에서 .env 변경 여부로 최종 재생성 결정
+          CHANGED=$(ssh ${{ secrets.USER }}@${{ secrets.HOST }} "cd ${{ secrets.REMOTE_PATH }}; if [ -f .env.changed.flag ]; then echo yes; rm -f .env.changed.flag; else echo no; fi")
+          if [ "${CHANGED}" = "yes" ]; then FORCE="--force-recreate"; fi
           ssh ${{ secrets.USER }}@${{ secrets.HOST }} "set -euo pipefail; \
             cd ${{ secrets.REMOTE_PATH }}; \
             if [ ! -f .env ]; then CAND=\"\"; CAND=$(find . .. \$HOME /opt /root -maxdepth 3 -type f -name .env 2>/dev/null | head -n1 || true); if [ -z \"$CAND\" ]; then echo 'ERROR: .env not found on server and ENV_FILE secret not provided'; pwd; ls -la; exit 1; fi; cp -f \"$CAND\" .env; echo Copied env file: \"$CAND\" -> .env; fi; \

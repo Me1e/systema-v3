@@ -21,7 +21,6 @@ export default function FileAdditionPage() {
   const [labels, setLabels] = useState([
     { key: 'date', value: '' },
     { key: 'participants', value: '' },
-    { key: 'location', value: '' },
   ]);
   const [state, formAction] = useActionState(addDocument, initialState);
   const router = useRouter();
