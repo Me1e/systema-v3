@@ -16,15 +16,18 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Set up SSH
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: |
             ${{ secrets.HETZNER_SSH_KEY }}
+
       - name: Add host to known_hosts
         run: |
           mkdir -p ~/.ssh
           ssh-keyscan -H ${{ secrets.HOST }} >> ~/.ssh/known_hosts
+
       - name: Sync repo to server
         run: |
           rsync -az \
@@ -34,11 +37,21 @@ jobs:
             --exclude .git \
             --exclude ".env" \
             ./ ${{ secrets.USER }}@${{ secrets.HOST }}:${{ secrets.REMOTE_PATH }}
+
       - name: Upload .env from secret (optional)
-        if: ${{ secrets.ENV_FILE != '' }}
+        env:
+          ENV_FILE: ${{ secrets.ENV_FILE }}
         run: |
-          ssh ${{ secrets.USER }}@${{ secrets.HOST }} "mkdir -p ${{ secrets.REMOTE_PATH }}"
-          ssh ${{ secrets.USER }}@${{ secrets.HOST }} "cat > ${{ secrets.REMOTE_PATH }}/.env << 'EOF'\n${{ secrets.ENV_FILE }}\nEOF"
-      - name: Compose up
+          if [ -n "${ENV_FILE}" ]; then \
+            ssh ${{ secrets.USER }}@${{ secrets.HOST }} "mkdir -p ${{ secrets.REMOTE_PATH }}"; \
+            ssh ${{ secrets.USER }}@${{ secrets.HOST }} "cat > ${{ secrets.REMOTE_PATH }}/.env << 'EOF'\n${ENV_FILE}\nEOF"; \
+          else \
+            echo "ENV_FILE not provided; skipping upload"; \
+          fi
+
+      - name: Compose up (build on server)
         run: |
-          ssh ${{ secrets.USER }}@${{ secrets.HOST }} "set -euo pipefail; cd ${{ secrets.REMOTE_PATH }}; if [ ! -f .env ]; then CAND=\"\"; CAND=$(find . .. \$HOME /opt /root -maxdepth 3 -type f -name .env 2>/dev/null | head -n1 || true); if [ -z \"$CAND\" ]; then echo 'ERROR: .env not found on server and ENV_FILE secret not provided'; pwd; ls -la; exit 1; fi; cp -f \"$CAND\" .env; echo Copied env file: \"$CAND\" -> .env; fi; docker compose -f deploy/docker-compose.yml up -d --build"
+          ssh ${{ secrets.USER }}@${{ secrets.HOST }} "set -euo pipefail; \
+            cd ${{ secrets.REMOTE_PATH }}; \
+            if [ ! -f .env ]; then CAND=\"\"; CAND=$(find . .. \$HOME /opt /root -maxdepth 3 -type f -name .env 2>/dev/null | head -n1 || true); if [ -z \"$CAND\" ]; then echo 'ERROR: .env not found on server and ENV_FILE secret not provided'; pwd; ls -la; exit 1; fi; cp -f \"$CAND\" .env; echo Copied env file: \"$CAND\" -> .env; fi; \
+            DOCKER_BUILDKIT=1 docker compose -f deploy/docker-compose.yml up -d --build"
