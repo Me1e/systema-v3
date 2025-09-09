@@ -42,11 +42,11 @@ jobs:
         env:
           ENV_FILE: ${{ secrets.ENV_FILE }}
         run: |
-          if [ -n "${ENV_FILE}" ]; then \
-            ssh ${{ secrets.USER }}@${{ secrets.HOST }} "mkdir -p ${{ secrets.REMOTE_PATH }}"; \
-            ssh ${{ secrets.USER }}@${{ secrets.HOST }} "cat > ${{ secrets.REMOTE_PATH }}/.env << 'EOF'\n${ENV_FILE}\nEOF"; \
-          else \
-            echo "ENV_FILE not provided; skipping upload"; \
+          if [ -n "${ENV_FILE}" ]; then
+            ssh ${{ secrets.USER }}@${{ secrets.HOST }} "mkdir -p ${{ secrets.REMOTE_PATH }}"
+            printf '%s\n' "${ENV_FILE}" | ssh ${{ secrets.USER }}@${{ secrets.HOST }} "cat > ${{ secrets.REMOTE_PATH }}/.env"
+          else
+            echo "ENV_FILE not provided; skipping upload"
           fi
 
       - name: Compose up (build on server)
