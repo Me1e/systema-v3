@@ -30,8 +30,9 @@
   - GOOGLE_API_KEY
   - LLM_MODEL(기본 gemini-2.5-pro)
 
-- 서버(프로덕션 `/opt/systema-v3/.env`)
+- 서버(프로덕션 `/<프로젝트경로>/.env` 예: `/systema-v3/.env`)
   - 위 공개/비공개 키 모두 + APP_DOMAIN, ACME_EMAIL
+  - GitHub Actions에서 `ENV_FILE` 시크릿으로 전체 내용을 업로드할 수도 있습니다.
 
 ## 4. 데이터베이스 초기화
 
@@ -55,31 +56,35 @@ docker compose -f deploy/docker-compose.dev.yml logs -f backend-dev next-dev
 
 주의
 
-- SSR에서 백엔드 호출은 컨테이너 내부 호스트(`backend-dev:8000`)를 사용하도록 설정되어 있습니다.
+- SSR에서 백엔드 호출은 컨테이너 내부 호스트(`backend-dev:8000`) 기준입니다.
 - 코드 저장 시 백엔드는 자동 리로드(uvicorn --reload), 프론트는 Next dev 서버가 핫 리로드합니다.
+- 개발용 `.env.local`에 `NEXT_PUBLIC_API_URL=http://localhost:8000`이 기본이며, dev compose가 프록시를 설정합니다.
 
 ## 6. 프로덕션 실행(Hetzner)
 
-서버에 `.env` 준비 후 실행
+서버에 루트 `.env` 준비 후 실행 (Caddy/ACME용 `APP_DOMAIN`, `ACME_EMAIL` 포함)
 
 ```bash
-docker compose -f deploy/docker-compose.yml up -d --build
-docker compose -f deploy/docker-compose.yml logs -f backend next caddy
+docker compose --env-file .env -f deploy/docker-compose.yml up -d --build
+docker compose -f deploy/docker-compose.yml logs -f backend next caddy | cat
 ```
 
 Caddy가 자동으로 TLS(ACME)를 발급합니다. 도메인의 A 레코드를 서버 IP로 지정하세요.
 
 ## 7. CI/CD(GitHub Actions)
 
-- CI: `.github/workflows/ci.yml` — PR/메인 푸시 시 프론트/백 빌드 확인
-- Deploy: `.github/workflows/deploy.yml` — 메인 푸시/수동 실행 시 서버로 rsync → compose up -d --build
+- CI: `.github/workflows/ci.yml` — PR/메인 푸시 시 프론트/백 빌드 확인(캐시 적용)
+- Deploy: `.github/workflows/deploy.yml` — 메인 푸시/수동 실행 시 서버로 rsync → 서버에서 `docker compose up -d --build --force-recreate`
 
 필수 Secrets(리포지토리 Settings → Actions → Secrets)
 
 - HETZNER_SSH_KEY: 배포 전용 개인키(패스프레이즈 없음 권장)
 - HOST: 서버 호스트/IP(예: 5.78.x.x)
 - USER: ssh 유저(예: root)
-- REMOTE_PATH: 예 `/opt/systema-v3`
+- REMOTE_PATH: 예 `/systema-v3`
+- (선택) ENV_FILE: 서버에 쓸 전체 `.env` 내용(멀티라인). 제공 시 서버에 `.env`로 저장됨
+
+배포 흐름(간단): main에 push → Actions의 `Deploy`가 서버로 rsync → 서버에서 `--env-file .env`로 compose 빌드/재시작
 
 ## 8. RAG 플로우(개요)
 
@@ -162,10 +167,6 @@ NEO4J_PASSWORD="<your-neo4j-password>"
 
 GOOGLE_API_KEY="your-google-api-key"
 
-# (옵션) OpenAI API 키
-
-# OPENAI_API_KEY="sk-..."
-
 # API URL (백엔드 서버 주소)
 
 NEXT_PUBLIC_API_URL=http://localhost:8000
@@ -201,7 +202,7 @@ docker compose -f deploy/docker-compose.dev.yml logs -f backend-dev next-dev | c
 - Docker Compose 서비스: `next`, `backend`, `caddy`
 - 환경: 서버 루트 `.env`에 공개/비밀키 분리 관리 (예: `APP_DOMAIN`, `ACME_EMAIL`, `SUPABASE_*`, `NEO4J_*`, `GOOGLE_API_KEY`)
 - 빌드: `deploy/Dockerfile.next`, `deploy/Dockerfile.backend`
-- 실행: `docker compose -f deploy/docker-compose.yml up -d --build`
+- 실행: `docker compose --env-file .env -f deploy/docker-compose.yml up -d --build`
 
 ## 4. 주요 기능
 

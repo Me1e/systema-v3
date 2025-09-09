@@ -50,8 +50,12 @@ jobs:
           fi
 
       - name: Compose up (build on server)
+        env:
+          ENV_FILE: ${{ secrets.ENV_FILE }}
         run: |
+          FORCE=""
+          if [ -n "${ENV_FILE}" ]; then FORCE="--force-recreate"; fi
           ssh ${{ secrets.USER }}@${{ secrets.HOST }} "set -euo pipefail; \
             cd ${{ secrets.REMOTE_PATH }}; \
             if [ ! -f .env ]; then CAND=\"\"; CAND=$(find . .. \$HOME /opt /root -maxdepth 3 -type f -name .env 2>/dev/null | head -n1 || true); if [ -z \"$CAND\" ]; then echo 'ERROR: .env not found on server and ENV_FILE secret not provided'; pwd; ls -la; exit 1; fi; cp -f \"$CAND\" .env; echo Copied env file: \"$CAND\" -> .env; fi; \
-            DOCKER_BUILDKIT=1 docker compose --env-file .env -f deploy/docker-compose.yml up -d --build --force-recreate"
+            DOCKER_BUILDKIT=1 docker compose --env-file .env -f deploy/docker-compose.yml up -d --build ${FORCE}"
