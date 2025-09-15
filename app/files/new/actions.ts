@@ -1,6 +1,6 @@
 'use server';
 
-import { supabase } from '@/lib/supabase/client';
+import { supabase } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 
 export async function addDocument(prevState: any, formData: FormData) {
