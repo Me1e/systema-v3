@@ -205,3 +205,45 @@ async def rechunk_document(document_id: str, background_tasks: BackgroundTasks, 
     except Exception as e:
         logging.error(f"Failed to rechunk document {document_id}: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to rechunk document: {str(e)}")
+
+
+@router.delete("/ingest/{document_id}")
+async def delete_document(document_id: str, driver: Driver = Depends(get_neo4j_driver)):
+    """
+    특정 문서를 DB와 지식 그래프에서 완전히 삭제합니다.
+    """
+    try:
+        # 1. Neo4j에서 관련 데이터 모두 삭제 (청크, 문서 노드, 엔티티)
+        with driver.session() as session:
+            # 청크 삭제
+            session.run("""
+                MATCH (c:Chunk)
+                WHERE c.ref_doc_id = $document_id OR c.document_id = $document_id
+                DETACH DELETE c
+            """, document_id=document_id)
+            
+            # Document 노드 삭제
+            session.run("""
+                MATCH (d:Document {id: $document_id})
+                DETACH DELETE d
+            """, document_id=document_id)
+            
+            # 관련 엔티티 삭제
+            session.run("""
+                MATCH (e:Entity)
+                WHERE e.document_id = $document_id
+                DETACH DELETE e
+            """, document_id=document_id)
+            
+            logging.info(f"Deleted all graph data for document {document_id}")
+
+        # 2. Supabase에서 문서 레코드 삭제
+        # ON DELETE CASCADE에 의해 labels 테이블의 관련 데이터도 자동 삭제됨
+        supabase_client.from_("documents").delete().eq("id", document_id).execute()
+        logging.info(f"Deleted document record from Supabase for id {document_id}")
+
+        return {"success": True, "message": "문서가 성공적으로 삭제되었습니다."}
+
+    except Exception as e:
+        logging.error(f"Failed to delete document {document_id}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"문서 삭제 중 오류 발생: {str(e)}")

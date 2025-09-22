@@ -51,15 +51,13 @@ export function IngestionVisualizer({ documentId, isOpen, onClose }: IngestionVi
   const fetchIngestionDetails = async () => {
     setLoading(true)
     try {
-      // Fetch chunking details
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
-      const detailsRes = await fetch(`${apiUrl}/api/ingest/${documentId}/details`)
+      const detailsRes = await fetch(`/api/ingest/${documentId}/details`)
       const details = await detailsRes.json()
       setChunks(details.chunks || [])
       setDocumentTitle(details.title || "")
 
       // Fetch graph data
-      const graphRes = await fetch(`${apiUrl}/api/ingest/${documentId}/graph`)
+      const graphRes = await fetch(`/api/ingest/${documentId}/graph`)
       const graph = await graphRes.json()
       setEntities(graph.entities || [])
       setRelationships(graph.relationships || [])
