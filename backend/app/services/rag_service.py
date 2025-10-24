@@ -2,6 +2,8 @@ import os
 import logging
 import json
 from functools import lru_cache
+from datetime import datetime
+import math
 
 from llama_index.core import (
     VectorStoreIndex,
@@ -313,9 +315,21 @@ def perform_hybrid_search(question: str, top_k: int = 10) -> list:
                         original_scores[node_id] = min(float(score) * 0.2, 1.0)  # 키워드 점수 조정
             
             logging.info(f"Keyword search returned {keyword_count} results")
+
+            weighted_rrf_scores = {}
+            for node_id, base_score in rrf_scores.items():
+                node_query = """
+                MATCH (c:Chunk {id: $node_id})-[:BELONGS_TO]->(d:Document)
+                RETURN d.created_at AS created_at
+                """
+                result = session.run(node_query, node_id=node_id).single()
+                created_at = result["created_at"] if result and "created_at" in result else None
+
+                weight = time_decay_weight(created_at)
+                weighted_rrf_scores[node_id] = base_score * weight
             
-            # 4. 상위 결과 선택 및 노드 생성
-            sorted_nodes = sorted(rrf_scores.items(), key=lambda x: x[1], reverse=True)[:top_k]
+            # 4. 상위 결과 선택 및 노드 생성 (시간 가중치 반영)
+            sorted_nodes = sorted(weighted_rrf_scores.items(), key=lambda x: x[1], reverse=True)[:top_k]
             logging.info(f"Final RRF merged results: {len(sorted_nodes)} nodes selected from {len(rrf_scores)} candidates")
             
             # 노드 정보 가져오기
@@ -359,6 +373,20 @@ def perform_hybrid_search(question: str, top_k: int = 10) -> list:
     except Exception as e:
         logging.error(f"하이브리드 검색 중 오류 발생: {e}", exc_info=True)
         return []
+
+def time_decay_weight(created_at: str, decay_rate=0.05) -> float:
+    """
+    문서 생성 시점을 기반으로 시간 가중치를 계산합니다.
+    """
+    if not created_at:
+        return 1.0
+    try:
+        created_dt = datetime.fromisoformat(str(created_at).split("T")[0])
+    except Exception:
+        return 1.0
+
+    days_diff = (datetime.now() - created_dt).days
+    return math.exp(-decay_rate * days_diff)
 
 def _create_document_node(document_id: str, doc_data: dict):
     """
