@@ -1,7 +1,9 @@
 from fastapi import APIRouter, HTTPException, BackgroundTasks, Depends
+from pydantic import BaseModel
 from app.models.schemas import IngestRequest, IngestResponse
 from app.services.rag_service import process_ingestion, get_neo4j_driver, supabase_client
 from app.services.supabase_service import get_document_status
+from app.services.notion_service import fetch_notion_pages
 from typing import List, Dict, Any
 from neo4j import Driver
 import logging
@@ -147,6 +149,104 @@ async def get_ingestion_graph(
             
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"그래프 정보 조회 실패: {str(e)}")
+
+# Notion
+class NotionIngestRequest(BaseModel):
+    database_url: str
+
+
+@router.post("/ingest_from_notion")
+async def ingest_from_notion(req: NotionIngestRequest, background_tasks: BackgroundTasks):
+    """
+    Notion 데이터베이스 URL을 기반으로 모든 페이지를 수집하고
+    Supabase에 저장한 뒤, RAG 청킹 프로세스를 자동 시작합니다.
+    """
+    try:
+        # 1️⃣ Notion에서 모든 페이지 가져오기
+        pages = fetch_notion_pages(req.database_url)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Notion fetch error: {e}")
+
+    if not pages:
+        raise HTTPException(status_code=404, detail="No pages found in this Notion DB")
+
+    results = []
+    for page in pages:
+        try:
+            # 2️⃣ Supabase에 문서 등록
+            insert_data = {
+                "title": page["title"],
+                "content": page["content"],
+                "metadata": {
+                    "date": page["date"],
+                    "tags": page["tags"],
+                    "people": page["people"],
+                    "generation": page["generation"],
+                    "source": page["source"],
+                },
+                "status": "PENDING",
+            }
+            inserted = supabase_client.from_("documents").insert(insert_data).execute()
+
+            if not inserted.data or len(inserted.data) == 0:
+                raise Exception("Supabase insert failed")
+
+            document_id = inserted.data[0]["id"]
+
+            # 3️⃣ 백그라운드에서 RAG ingestion (청킹 + 임베딩 + 그래프)
+            background_tasks.add_task(process_ingestion, document_id)
+
+            results.append({
+                "document_id": document_id,
+                "title": page["title"],
+                "status": "started"
+            })
+
+        except Exception as e:
+            logging.error(f"❌ Failed to ingest page '{page['title']}': {e}")
+            results.append({
+                "title": page["title"],
+                "status": f"error: {e}"
+            })
+
+    return {
+        "status": "✅ ingestion started",
+        "total_pages": len(results),
+        "from": req.database_url,
+        "results": results,
+    }
+
+@router.post("/ingest_all_pending")
+async def ingest_all_pending(background_tasks: BackgroundTasks):
+    """
+    Supabase에서 status='PENDING' 문서들을 전부 자동 수집(청킹) 처리
+    """
+    try:
+        pending_docs = (
+            supabase_client
+            .from_("documents")
+            .select("id, title")
+            .eq("status", "PENDING")
+            .execute()
+        )
+
+        if not pending_docs.data:
+            return {"message": "No pending documents found."}
+
+        results = []
+        for doc in pending_docs.data:
+            document_id = doc["id"]
+            background_tasks.add_task(process_ingestion, document_id)
+            results.append(doc)
+
+        return {
+            "message": f"{len(results)} pending documents scheduled for ingestion.",
+            "documents": results
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to ingest all: {e}")
+
 
 @router.post("/ingest/{document_id}/rechunk", response_model=IngestResponse)
 async def rechunk_document(document_id: str, background_tasks: BackgroundTasks, driver: Driver = Depends(get_neo4j_driver)):

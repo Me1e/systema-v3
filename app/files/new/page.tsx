@@ -25,6 +25,48 @@ export default function FileAdditionPage() {
   const [state, formAction] = useActionState(addDocument, initialState);
   const router = useRouter();
 
+    const [notionUrl, setNotionUrl] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleNotionImport = async () => {
+    if (!notionUrl) {
+      toast({ title: 'URL 없음', description: 'Notion DB URL을 입력하세요.' });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      const response = await fetch(`${apiUrl}/api/ingest_from_notion`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ database_url: notionUrl }),
+      });
+
+      const res = await response.json();
+
+      if (!response.ok) {
+        throw new Error(res.detail || '가져오기 중 오류가 발생했습니다.');
+      }
+
+      toast({
+        title: '가져오기 성공',
+        description: `${res.imported_pages}개의 페이지를 가져왔습니다.`,
+      });
+    } catch (err: any) {
+      toast({
+        title: '가져오기 실패',
+        description:
+          err.message || '예기치 못한 오류가 발생했습니다.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (state.success) {
       toast({
@@ -69,6 +111,23 @@ export default function FileAdditionPage() {
             파일 목록으로 돌아가기
           </Link>
         </Button>
+
+        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+          <h2 className="text-lg font-semibold mb-3">Notion DB에서 모든 문서 가져오기</h2>
+          <div className="flex gap-2">
+            <Input
+              placeholder="https://www.notion.so/your-database-url(url부분만 입력해주세요)"
+              value={notionUrl}
+              onChange={(e) => setNotionUrl(e.target.value)}
+              className="flex-1"
+            />
+            <Button onClick={handleNotionImport} disabled={loading}>
+              {loading ? '가져오는 중...' : '가져오기'}
+            </Button>
+          </div>
+        </div>
+
+
         <div className="bg-white rounded-lg shadow-md p-8">
           <h1 className="text-2xl font-bold mb-6 text-gray-800">
             새 회의록 추가

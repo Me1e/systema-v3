@@ -171,6 +171,27 @@ export default function FilesPage() {
             </div>
           </div>
 
+          {/* Ingest All */}
+          <div className="flex justify-end mb-4">
+            <Button
+              variant="default"
+              onClick={async () => {
+                toast.info('모든 문서 수집을 시작합니다...');
+                try {
+                  const res = await fetch('/api/ingest_all_pending', { method: 'POST' });
+                  const data = await res.json();
+                  if (!res.ok) throw new Error(data.detail || '오류 발생');
+                  toast.success(`총 ${data.documents.length}개의 문서를 수집 시작했습니다.`);
+                } catch (err: any) {
+                  toast.error('전체 수집 실패', { description: err.message });
+                }
+              }}
+            >
+              <Rocket className="mr-2 h-4 w-4" />
+              모두 수집하기
+            </Button>
+          </div>
+
           {/* Table */}
           <Card>
             <CardContent className="p-0">
