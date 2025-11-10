@@ -9,11 +9,13 @@ Project SYSTEMA is a Korean-language intelligent meeting minutes interface built
 **Tech Stack:**
 - Frontend: Next.js 15.2.4, React ^19, Tailwind CSS, Radix UI
 - Backend: Python 3.11+ FastAPI with LlamaIndex orchestration
+- State Management: Zustand with localStorage persistence for client-side state
 - LLM: Google Gemini 2.5 Pro (model ID: `gemini-2.5-pro`)
 - Embedding: Gemini embedding-001 (768 dimensions)
 - Databases: Supabase (PostgreSQL) for app data, Neo4j AuraDB for vectors + knowledge graph
 - Real-time: Server-Sent Events (SSE) for streaming responses
 - Visualization: React Flow, Dagre.js, D3-force for graph visualization
+- Dependencies: zustand (5.0.8), diff (8.0.2), react-diff-viewer-continued (3.4.0), date-fns (4.1.0)
 
 ## Common Commands
 
@@ -84,13 +86,17 @@ docker compose -f deploy/docker-compose.yml restart backend
 **Frontend (Next.js):**
 - `app/page.tsx` - Main query interface with Dashboard + ChatPanel
 - `app/files/page.tsx` - Document management page with full CRUD operations (view, ingest, rechunk, delete)
-- `app/files/new/page.tsx` - New document creation form (title, content, labels, reference URL)
-- `components/chat-panel.tsx` - Chat interface with SSE streaming
+- `app/files/new/page.tsx` - New document creation form (title, content, labels, reference URL, Notion import)
+- `components/chat-panel.tsx` - Chat interface with SSE streaming and prompt editor button
 - `components/dashboard.tsx` - Timeline and theme-based summaries
 - `components/graph-visualizer.tsx` - Knowledge graph visualization
 - `components/ingestion-visualizer.tsx` - Displays document chunking results with chunk text and embedding status
+- `components/prompt-manager-modal.tsx` - Prompt version management UI with editor and history panel
+- `components/prompt-history-item.tsx` - Individual history entry component with rename functionality
+- `components/prompt-diff-modal.tsx` - Visual diff viewer for comparing prompt versions
 - `lib/supabase/client.ts` - Client-side Supabase (anon key)
 - `lib/supabase/server.ts` - Server-side Supabase (service role key)
+- `lib/stores/prompt-store.ts` - Zustand store for prompt history management with localStorage persistence
 
 **Backend (FastAPI):**
 - `backend/app/main.py` - FastAPI app with CORS and router registration
@@ -106,11 +112,17 @@ docker compose -f deploy/docker-compose.yml restart backend
   - `GET /api/ingest/{id}/details` - Get chunking visualization
   - `POST /api/ingest/{id}/rechunk` - Re-process document with new chunking
   - `DELETE /api/ingest/{id}` - Delete document from Neo4j and Supabase
+  - `POST /api/ingest_from_notion` - Import all pages from Notion database URL
+  - `POST /api/ingest_all_pending` - Batch process all PENDING documents
 - `backend/app/api/routers/dashboard.py` - Dashboard statistics
 - `backend/app/api/routers/graph.py` - Graph visualization data
 - `backend/app/api/routers/debug.py` - Debug entity structure endpoints
 - `backend/app/core/config.py` - Environment configuration with Pydantic
 - `backend/app/services/supabase_service.py` - Supabase helper functions for document operations
+- `backend/app/services/notion_service.py` - Notion API integration for database import:
+  - `fetch_notion_database()` - Fetches all pages from a Notion database
+  - `fetch_page_content()` - Extracts content and metadata from Notion pages
+  - `extract_database_id()` - Parses database ID from Notion URL
 - `backend/app/models/schemas.py` - Request/response Pydantic models for API endpoints
 
 **Deployment:**
@@ -214,6 +226,9 @@ GOOGLE_API_KEY="<api-key>"
 
 # LLM Model (optional, defaults to gemini-2.5-pro)
 LLM_MODEL="gemini-2.5-pro"
+
+# Notion Integration (optional, only needed for Notion import feature)
+NOTION_API_KEY="<notion-integration-token>"
 ```
 
 **Important Notes:**
@@ -225,6 +240,9 @@ LLM_MODEL="gemini-2.5-pro"
 ```bash
 # Only needed if switching from Gemini to OpenAI embeddings
 OPENAI_API_KEY="<openai-key>"  # Currently unused, Gemini is default
+
+# Only needed for Notion database import feature
+NOTION_API_KEY="<notion-integration-token>"
 ```
 
 ### Additional for Production
@@ -288,6 +306,8 @@ Documents flow through these states during processing:
 
 **User Workflows:**
 - **Create Document**: Navigate to `/app/files/new`, enter title/content/labels, optionally add reference URL
+- **Import from Notion**: Enter Notion database URL in `/app/files/new`, imports all pages as PENDING
+- **Batch Ingestion**: Click "모두 수집하기" button to process all PENDING documents at once
 - **Trigger Ingestion**: Click "Ingest" button in `/app/files` page (calls `POST /api/ingest`)
 - **View Progress**: Status updates from PENDING → INGESTING → INGESTED
 - **View Chunks**: Click "Details" to see chunking visualization
@@ -305,6 +325,53 @@ The ingestion process applies several quality filters to ensure clean, useful ch
 - **Implementation**: See `backend/app/services/rag_service.py:466-502` for filter logic
 
 These filters improve search quality by removing low-information chunks and preventing duplicate context in responses.
+
+### Prompt Management Pattern
+
+The custom prompt management system allows users to test different system prompts:
+
+**Architecture:**
+- **Zustand Store** (`lib/stores/prompt-store.ts`): Manages prompt history with localStorage persistence
+- **Version Control**: Parent-child relationships track prompt evolution
+- **Diff Visualization**: react-diff-viewer-continued shows line-by-line changes
+
+**How it Works:**
+1. User clicks edit button in ChatPanel (top-right corner)
+2. Opens modal with prompt editor and version history
+3. Saved prompts are stored in browser localStorage (per-user)
+4. When submitting a question, the current prompt is prepended: `${currentPrompt}\n\n질문: ${userInput}`
+5. History tracks changes with diff statistics (lines added/removed)
+
+**Key Features:**
+- Git-style diff visualization between versions
+- Rename history entries for easy reference
+- Revert to any previous version (creates new history entry)
+- Clear all history with confirmation
+
+### Notion Import Workflow
+
+Import documents from Notion databases:
+
+**Setup:**
+1. Create Notion Integration at https://www.notion.so/my-integrations
+2. Add integration to target database (Share → Connections)
+3. Set `NOTION_API_KEY` environment variable in backend
+
+**Import Process:**
+1. User enters Notion database URL in `/app/files/new`
+2. Backend calls `/api/ingest_from_notion`:
+   - Extracts database ID from URL
+   - Fetches all pages via Notion API
+   - Extracts content: paragraphs, headings, bullets
+   - Extracts metadata: title, date, tags, people, generation (기수)
+   - Creates documents in PENDING status
+3. User clicks "모두 수집하기" to batch process all PENDING documents
+
+**Supported Notion Fields:**
+- Title, Date, Tags (multi-select)
+- People (person property)
+- Generation/기수 (select property)
+- Rich text content blocks
 
 ### Working with Neo4j
 
@@ -394,6 +461,18 @@ const handleAction = async (docId: string, action: 'ingest' | 'rechunk' | 'delet
 - `DELETE /api/ingest/{document_id}` - Completely delete document
   - Removes: Neo4j chunks/entities + Supabase record
   - Warning: This action is irreversible
+
+### Notion Import
+
+- `POST /api/ingest_from_notion` - Import all pages from Notion database
+  - Body: `{ url: string }` - Notion database URL
+  - Process: Fetches all pages, creates documents in PENDING status
+  - Returns: List of created documents with metadata
+
+- `POST /api/ingest_all_pending` - Batch process all PENDING documents
+  - Sequentially ingests all documents with status='PENDING'
+  - Updates status: PENDING → INGESTING → INGESTED/FAILED
+  - Returns: Processing results for each document
 
 ### Dashboard & Analytics
 
