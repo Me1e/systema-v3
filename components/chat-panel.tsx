@@ -308,7 +308,7 @@ export function ChatPanel() {
                                       href={doc.link}
                                       target="_blank"
                                       rel="noopener noreferrer"
-                                      className="text-blue-600 hover:underline"
+                                      className="text-blue-600 hover:underline flex-shrink-0"
                                       onClick={(e) => e.stopPropagation()}
                                       aria-label="원문 링크 새 탭에서 열기"
                                       title="원문 링크 열기"
