@@ -11,12 +11,15 @@ import {
   ChevronDown,
   ChevronRight,
   FileCode,
+  Edit2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { usePromptStore } from '@/lib/stores/prompt-store';
+import { PromptManagerModal } from './prompt-manager-modal';
 
 interface Chunk {
   text: string;
@@ -60,7 +63,11 @@ export function ChatPanel() {
   const [expandedChunks, setExpandedChunks] = useState<Record<string, boolean>>(
     {}
   );
+  const [showPromptModal, setShowPromptModal] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+
+  // Get current prompt from store
+  const { currentPrompt } = usePromptStore();
 
   const scrollToBottom = () => {
     if (scrollAreaRef.current) {
@@ -82,7 +89,11 @@ export function ChatPanel() {
     if (!input.trim() || isLoading) return;
 
     setIsLoading(true);
-    const userQuestion = input; // Save the input before clearing
+
+    // Combine current prompt with user input if prompt exists
+    const userQuestion = currentPrompt
+      ? `${currentPrompt}\n\n질문: ${input}`
+      : input;
 
     // Reset the ref for new message
     currentMessageRef.current = '';
@@ -103,7 +114,7 @@ export function ChatPanel() {
       const response = await fetch(`${apiUrl}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question: userQuestion }), // Use saved question
+        body: JSON.stringify({ question: userQuestion }), // Use combined question with prompt
       });
 
       if (!response.body) {
@@ -221,7 +232,18 @@ export function ChatPanel() {
   };
 
   return (
-    <div className="flex flex-col w-full md:w-1/2 lg:w-2/5 h-screen bg-neutral-50 border-l">
+    <div className="flex flex-col w-full md:w-1/2 lg:w-2/5 h-screen bg-neutral-50 border-l relative">
+      {/* Edit Button - Top Right */}
+      <Button
+        variant="ghost"
+        size="icon"
+        className="absolute top-4 right-4 z-10 bg-white border border-neutral-200 hover:bg-neutral-100"
+        onClick={() => setShowPromptModal(true)}
+        title="프롬프트 관리"
+      >
+        <Edit2 className="h-4 w-4 text-neutral-600" />
+      </Button>
+
       <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
         <div className="space-y-6">
           {messages.map((m, i) => (
@@ -396,6 +418,12 @@ export function ChatPanel() {
           </Button>
         </form>
       </div>
+
+      {/* Prompt Manager Modal */}
+      <PromptManagerModal
+        open={showPromptModal}
+        onOpenChange={setShowPromptModal}
+      />
     </div>
   );
 }

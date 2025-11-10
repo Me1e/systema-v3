@@ -43,12 +43,15 @@
     "cmdk": "latest",
     "d3-force": "^3.0.0",
     "d3-scale": "^4.0.2",
+    "date-fns": "^4.1.0",
+    "diff": "^8.0.2",
     "embla-carousel-react": "latest",
     "input-otp": "latest",
     "lucide-react": "^0.454.0",
     "next": "15.2.4",
     "react": "^19",
     "react-day-picker": "latest",
+    "react-diff-viewer-continued": "^3.4.0",
     "react-dom": "^19",
     "react-hook-form": "latest",
     "react-resizable-panels": "latest",
@@ -58,7 +61,8 @@
     "tailwind-merge": "^2.5.5",
     "tailwindcss-animate": "^1.0.7",
     "vaul": "latest",
-    "zod": "latest"
+    "zod": "latest",
+    "zustand": "^5.0.8"
   },
   "devDependencies": {
     "@types/node": "^22",
